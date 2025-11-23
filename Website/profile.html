@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Profile • Group Project: HELP</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    // Require login before letting the page load
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('login.html');
+    })();
+  </script>
+
+  <script defer src="nav.js"></script>
+  <!-- Shared progress logic (points, completion, etc.) -->
+  <script defer src="Challenges/progress.js"></script>
+
+  <!-- Small page-specific tweaks -->
+  <style>
+    /* points pill */
+    .points-card .points-pill {
+      background: var(--chip-bg, #111);
+      border: 1px solid var(--chip-br, #333);
+      color: var(--chip-fg, #fff);
+      padding: .35rem .6rem;
+      border-radius: 999px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.25rem;
+    }
+
+    @media (prefers-color-scheme: light) {
+      .points-card .points-pill {
+        background: var(--chip-bg, #222);
+        border-color: var(--chip-br, #444);
+        color: var(--chip-fg, #fff);
+      }
+    }
+
+    /* status ticks in challenge list */
+    .challenge-status.tick { color: var(--ok, #22c55e); }
+    .challenge-status.cross { color: var(--muted, #888); }
+
+    /* streak label styling */
+    .streak-label {
+      text-align: center;
+      margin-top: 8px;
+      font-weight: 600;
+      color: #ff8c00;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+    }
+    body.dark-mode .streak-label {
+      color: #ffb84d;
+    }
+
+    /* Dropdown container */
+    .dropdown {
+      position: relative;
+      display: inline-block; /* Ensures the dropdown behaves as a block-level hover area */
+    }
+
+    /* Menu styling */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%; 
+      left: 0;
+      z-index: 10; 
+      background: var(--bg, #fff); 
+      border: 1px solid var(--border, #ccc); 
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 100%; 
+      padding: 0;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    /* Show menu on hover */
+    .dropdown:hover .dropdown-menu,
+    .dropdown-menu:hover {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Menu item styling */
+    .dropdown-item {
+      display: block;
+      padding: 8px 12px;
+      text-decoration: none;
+      border-bottom: 1px solid var(--border-light, #eee);
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+
+  </style>
+</head>
+
+<body>
+  <!-- Navbar (injected by nav.js) -->
+  <nav id="site-nav"></nav>
+
+  <!-- 3-column profile layout -->
+  <main class="profile-grid">
+    <!-- LEFT COLUMN: avatar + buttons -->
+    <aside class="col-left">
+      <div class="avatar-box" id="avatarBox">
+        <img id="avatar-img" alt="Profile avatar">
+        <span class="avatar-placeholder">Profile Image Placeholder</span>
+      </div>
+
+      <div class="avatar-actions">
+        <button id="change-avatar" class="glow-btn center-btn" title="Pick from preset avatars">
+          Change Profile Picture
+        </button>
+        <button id="clear-avatar" class="primary-btn" title="Remove current avatar">
+          Remove
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: greeting, points, streak, challenges -->
+    <section class="col-center">
+      <h1 class="hello-title">
+        Hello: <span id="username">User</span>
+      </h1>
+
+      <!-- Points card -->
+      <div class="profile-card points-card" aria-live="polite" style="display:flex;align-items:center;gap:10px;">
+        <span class="section-heading" style="margin:0;">Points</span>
+        <div class="points-pill">
+          <span id="points-value">0</span>
+        </div>
+      </div>
+
+      <!-- Streak card -->
+      <div class="profile-card streak-card">
+        <div class="streak-week" aria-label="Streak weekdays">
+          <span class="streak-day">S</span>
+          <span class="streak-day">M</span>
+          <span class="streak-day">T</span>
+          <span class="streak-day">W</span>
+          <span class="streak-day">T</span>
+          <span class="streak-day">F</span>
+          <span class="streak-day">S</span>
+        </div>
+
+        <div class="streak-week" id="streakDots" aria-label="Streak dots">
+          <span class="streak-dot" data-day="0"></span>
+          <span class="streak-dot" data-day="1"></span>
+          <span class="streak-dot" data-day="2"></span>
+          <span class="streak-dot" data-day="3"></span>
+          <span class="streak-dot" data-day="4"></span>
+          <span class="streak-dot" data-day="5"></span>
+          <span class="streak-dot" data-day="6"></span>
+        </div>
+
+        <p class="streak-label">
+          🔥 <span id="streak-count">0</span> day streak
+        </p>
+      </div>
+
+      <!-- Challenge progress list -->
+      <div class="profile-card challenges-card">
+        <h3 class="section-heading">Challenges</h3>
+        <div id="challengeList" class="challenge-list" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: security / extras -->
+    <aside class="col-right">
+      <div class="profile-card">
+        <div class="security-row">
+          <div class="dropdown">
+            <button class="dropdown-toggle">Security ▾</button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item" id="reset-password">Reset password</a>
+              <a href="#" class="dropdown-item" id="verify-email">Verify email</a>
+            </div>
+          </div>
+        </div>
+        <div class="email-status-badge" id="email-status">Email status: Checking...</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Achievements Popup -->
+  <div class="achievement-container" id="achievement-section">
+    <button class="achievement-toggle" id="achievement-toggle-btn">
+        🏆
+    </button> 
+    <div class="achievement-content" id="achievement-panel">
+        <h3>🏆 My Achievements</h3>    
+        <div class="achievement-list">
+            <ul>
+                <li class="unlocked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Alex
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Milo
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Serena
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Dr. Node
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Rhrea
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Sentinel
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Echo
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Vex
+                </li>
+                <li class="locked">
+                    <span class="icon">✨</span> 
+                    <strong>Defeated:</strong> Oracle-9
+                </li>
+                </ul>
+        </div>
+    </div>
+</div>
+
+  <!-- Avatar picker modal -->
+  <div class="modal" id="avatarModal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="avatarPickerTitle">
+      <span class="close" id="closeAvatarPicker" title="Close">&times;</span>
+      <h2 id="avatarPickerTitle" style="margin-top:0;">Choose your avatar</h2>
+      <p style="margin:6px 0 14px; opacity:.8;">Click an image to set it as your profile picture.</p>
+      <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
+  </div>
+
+  <script>
+
+    // Handle email verification FIRST (before any login checks)
+    (function handleEmailVerificationEarly() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      let verificationHandled = false; // Flag to track if we processed a token
+      if (token) {
+        // Remove the token from the URL to clean it up
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+        // Call the verification API
+        fetch(`/api/verify-email?token=${encodeURIComponent(token)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              alert(`${data.message} ✅`);
+              verificationHandled = true; // Mark as handled
+            } else {
+              alert(`Verification failed: ${data.message}`);
+            }
+          })
+          .catch(error => {
+            alert('Error verifying email. Please try again.');
+            console.error('Verification error:', error);
+          });
+      }
+      // Store the flag globally so DOMContentLoaded can check it
+      window.verificationHandled = verificationHandled;
+    })();
+    // Now check login (but skip redirect if verification was just handled)
+    (function () {
+      if (!localStorage.getItem('user') && !window.verificationHandled) {
+        window.location.replace('login.html');
+      }
+    })();
+    // --------------------------
+    // RENDER HELPERS
+    // --------------------------
+
+    // fills the challenge list on the profile page
+    function renderChallengeList(selector, total = 10) {
+      const wrap = document.querySelector(selector);
+      if (!wrap) return;
+
+      wrap.innerHTML = '';
+      for (let n = 1; n <= total; n++) {
+        const done = window.Progress && Progress.hasCompleted(n);
+        const row = document.createElement('div');
+        row.className = 'challenge-row';
+        row.innerHTML = `
+          <span class="challenge-name">Challenge ${n}</span>
+          <span class="challenge-status ${done ? 'tick' : 'cross'}">${done ? '✓' : '✗'}</span>
+        `;
+        wrap.appendChild(row);
+      }
+    }
+
+    // Updates achievements based on completed challenges
+  function updateAchievementsFromChallenges() {
+    if (!window.Progress) return;
+
+    const achievements = document.querySelectorAll('.achievement-list li');
+    achievements.forEach((li, index) => {
+      const challengeNum = index + 1; // 1-based index
+      const isDone = Progress.hasCompleted(challengeNum);
+
+      if (isDone) {
+        li.classList.remove('locked');
+        li.classList.add('unlocked');
+      } else {
+        li.classList.remove('unlocked');
+        li.classList.add('locked');
+      }
+  });
+}
+
+    // updates the points pill
+    function refreshPointsBadge() {
+      const el = document.getElementById('points-value');
+      if (el && window.Progress) el.textContent = Progress.getPoints();
+    }
+
+    // reflect changes from other tabs (like finishing a challenge, gaining points, etc.)
+    window.addEventListener('storage', (e) => {
+      if (!e.key) return;
+      if (window.Progress) {
+        refreshPointsBadge();
+        renderChallengeList('#challengeList');
+        updateAchievementsFromChallenges();
+      }
+    });
+
+    // --------------------------
+    // PAGE SETUP
+    // --------------------------
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Declare u at the top so it's available everywhere in this function
+      let u = null;
+
+      // Username loading
+      try {
+        const raw = localStorage.getItem('user');
+        u = raw ? JSON.parse(raw) : null;
+        const name = (u && (u.username || u.name || u.email)) || 'User';
+        const uEl = document.getElementById('username');
+        if (uEl) uEl.textContent = name;
+      } catch {}
+
+      // NEW: Email verification status
+      const emailStatusEl = document.getElementById('email-status');
+      if (emailStatusEl && u && u.id) {
+        fetch(`/api/user/${u.id}/status`)
+          .then(res => res.json())
+          .then(data => {
+            emailStatusEl.textContent = data.emailVerified ? 'Email status: Verified ✅' : 'Email status: Not verified ❌';
+            emailStatusEl.style.color = data.emailVerified ? '#22c55e' : '#ef4444';
+          })
+          .catch(() => {
+            emailStatusEl.textContent = 'Email status: Unable to check';
+          });
+      }
+      
+      // Security dropdown buttons (rest of your existing code)
+      const resetEl = document.getElementById('reset-password');
+      const verifyEl = document.getElementById('verify-email');
+      
+      if (resetEl) {
+        resetEl.addEventListener('click', async (e) => {
+          e.preventDefault();
+          let userId = null;
+          try {
+            const raw = localStorage.getItem('user');
+            const u2 = raw ? JSON.parse(raw) : null;  // Note: Using u2 to avoid conflict
+            userId = u2?.id;
+          } catch {}
+          if (!userId) {
+            alert('User not logged in');
+            return;
+          }
+          const currentPassword = window.prompt('Enter your current password:');
+          if (!currentPassword) return;
+          const newPassword = window.prompt('Enter your new password (at least 6 characters):');
+          if (!newPassword || newPassword.length < 6) {
+            alert('New password must be at least 6 characters');
+            return;
+          }
+          try {
+            const response = await fetch(`/api/user/${userId}/change-password`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await response.json();
+            alert(data.message);
+          } catch (error) {
+            alert('Error changing password. Please try again.');
+            console.error(error);
+          }
+        });
+      }
+      if (verifyEl) {
+        verifyEl.addEventListener('click', async (e) => {
+          e.preventDefault();
+          let userId = null;
+          try {
+            const raw = localStorage.getItem('user');
+            const u2 = raw ? JSON.parse(raw) : null;  // Note: Using u2 to avoid conflict
+            userId = u2?.id;
+          } catch {}
+          if (!userId) {
+            alert('User not logged in');
+            return;
+          }
+          try {
+            const response = await fetch(`/api/user/${userId}/send-verification-email`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            alert(data.message);
+          } catch (error) {
+            alert('Error sending verification email. Please try again.');
+            console.error(error);
+          }
+        });
+      }
+
+      //
+      // Achievements drawer expand/collapse logic
+      //
+      (function drawer() {
+        const drawer        = document.getElementById('drawer');
+        const drawerHandle  = document.getElementById('drawerHandle');
+        const drawerContent = document.getElementById('drawerContent');
+        if (!drawer || !drawerHandle || !drawerContent) return;
+
+        const COLLAPSED = 64;
+        const EXPANDED  = 440;
+
+        drawer.style.height = COLLAPSED + 'px';
+
+        const setH = h => {
+          drawer.style.height = Math.max(COLLAPSED, Math.min(EXPANDED, h)) + 'px';
+        };
+
+        drawerHandle.addEventListener('click', () => {
+          const cur = parseInt(drawer.style.height || COLLAPSED, 10);
+          setH(cur < EXPANDED ? EXPANDED : COLLAPSED);
+        });
+
+        drawer.addEventListener('wheel', (e) => {
+          const cur = parseInt(drawer.style.height || COLLAPSED, 10);
+          const atTop = drawerContent.scrollTop <= 0;
+          // scroll up expands
+          if (e.deltaY < 0 && cur < EXPANDED) {
+            e.preventDefault();
+            setH(cur + 30);
+          }
+          // scroll down collapses (only if scrolled to top so you don't steal scroll inside drawer content)
+          if (e.deltaY > 0 && cur > COLLAPSED && atTop) {
+            e.preventDefault();
+            setH(cur - 30);
+          }
+        }, { passive: false });
+      })();
+
+      //
+      // Avatar picker modal logic
+      //
+      const AVATAR_DIR = 'avatars/';
+      const AVATARS    = ['01.png','02.png','03.png','04.png','05.png','06.png','07.png','08.png','09.png'];
+
+      const box       = document.getElementById('avatarBox');
+      const imgEl     = document.getElementById('avatar-img');
+      const changeBtn = document.getElementById('change-avatar');
+      const clearBtn  = document.getElementById('clear-avatar');
+      const modal     = document.getElementById('avatarModal');
+      const closeX    = document.getElementById('closeAvatarPicker');
+      const grid      = document.getElementById('avatarGrid');
+
+      if (!box || !imgEl || !changeBtn || !clearBtn || !modal || !closeX || !grid) {
+        // If something's missing, bail out early so we don't throw.
+        return;
+      }
+
+      // Per-user key for avatar storage
+      let userKey = 'default';
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          userKey = (u?._id || u?.email || u?.username || 'default') + '';
+        }
+      } catch {}
+      const STORAGE_KEY = `avatar:${userKey}`;
+
+      // Build avatar grid
+      grid.innerHTML = '';
+      AVATARS.forEach((fname, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'avatar-option';
+        btn.setAttribute('aria-label', `Avatar ${i+1}`);
+        const src = AVATAR_DIR + fname;
+        btn.innerHTML = `<img src="${src}" alt="Avatar ${i+1}">`;
+        btn.addEventListener('click', () => selectAvatar(src));
+        grid.appendChild(btn);
+      });
+
+      function openPicker() {
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      function closePicker() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      changeBtn.addEventListener('click', openPicker);
+      closeX.addEventListener('click',  closePicker);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closePicker();
+      });
+
+      function applyAvatar(src) {
+        imgEl.src = src;
+        box.classList.add('has-img');
+      }
+
+      function selectAvatar(src) {
+        localStorage.setItem(STORAGE_KEY, src);
+        applyAvatar(src);
+        closePicker();
+      }
+
+      clearBtn.addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        imgEl.src = '';
+        box.classList.remove('has-img');
+      });
+
+      // load saved avatar (if any)
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        applyAvatar(saved);
+      }
+
+      //
+      // STREAK LOGIC (continuous streak, capped visually at 7 dots)
+      //
+
+      // Date -> "YYYY-MM-DD"
+      function ymdLocal(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+
+      // Get user info + streak storage key
+      function getUserAndKey() {
+        let u = null;
+        try { u = JSON.parse(localStorage.getItem('user') || 'null'); } catch {}
+        const key  = (u && (u._id || u.email || u.username)) || 'default';
+        const name = (u && (u.username || u.name || u.email)) || 'User';
+        return { key, name };
+      }
+
+      // Mark today's login in localStorage so it counts toward the streak
+      (function markToday() {
+        const { key } = getUserAndKey();
+        const storeKey = `streak:${key}`;
+        const todayTag = ymdLocal(new Date());
+
+        let days = [];
+        try {
+          days = JSON.parse(localStorage.getItem(storeKey) || '[]');
+        } catch {}
+
+        if (!days.includes(todayTag)) {
+          days.push(todayTag);
+          // keep the array from getting huge
+          if (days.length > 120) {
+            days = days.slice(-120);
+          }
+          localStorage.setItem(storeKey, JSON.stringify(days));
+        }
+      })();
+
+      // Count consecutive days up to today
+      function getStreakCount() {
+        const { key } = getUserAndKey();
+        const storeKey = `streak:${key}`;
+
+        let days = [];
+        try {
+          days = JSON.parse(localStorage.getItem(storeKey) || '[]');
+        } catch {}
+        const seen = new Set(days);
+
+        let streak = 0;
+        const cursor = new Date(); // start from today
+
+        while (true) {
+          const tag = ymdLocal(cursor);
+          if (seen.has(tag)) {
+            streak++;
+            cursor.setDate(cursor.getDate() - 1); // go back one day and keep checking
+          } else {
+            break;
+          }
+        }
+
+        return streak;
+      }
+
+      // Light up up to 7 dots and update "🔥 X-day streak"
+      function renderWeeklyStreak() {
+        const { name } = getUserAndKey();
+        const nameEl = document.getElementById('username');
+        if (nameEl) nameEl.textContent = name;
+
+        const dots = document.querySelectorAll('#streakDots .streak-dot');
+        const streakCount = getStreakCount();
+        const fillAmount = Math.min(streakCount, 7); // cap visual fill at 7
+
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('on', i < fillAmount);
+        });
+
+        const streakNumEl = document.getElementById('streak-count');
+        if (streakNumEl) {
+          streakNumEl.textContent = streakCount;
+        }
+      }
+
+      //
+      // PROGRESS / POINTS / CHALLENGES
+      //
+      if (window.Progress && typeof Progress.init === "function") {
+        await Progress.init();
+      }
+
+      // now that Progress is ready, render points + challenges
+      refreshPointsBadge();
+      renderChallengeList('#challengeList', 10);
+      updateAchievementsFromChallenges();
+
+      // finally update the streak UI (and username text if it changed)
+      renderWeeklyStreak();
+
+      // Handle email verification from email link (e.g., ?token=abc123 in URL)
+      (function handleEmailVerification() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (token) {
+          // Remove the token from the URL to clean it up (optional, prevents it from staying in the address bar)
+          const newUrl = window.location.pathname + window.location.hash; // Keep path and hash, remove query params
+          window.history.replaceState({}, document.title, newUrl);
+
+          // Call verification API (GET with token in query param, matching backend)
+          fetch(`/api/verify-email?token=${encodeURIComponent(token)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                alert(`${data.message} ✅`);
+                // Refresh the email status display
+                const emailStatusEl = document.getElementById('email-status');
+                if (emailStatusEl) {
+                  emailStatusEl.textContent = 'Email status: Verified ✅';
+                  emailStatusEl.style.color = '#22c55e';
+                }
+              } else {
+                alert(`Verification failed: ${data.message}`);
+              }
+            })
+            .catch(error => {
+              alert('Error verifying email. Please try again.');
+              console.error('Verification error:', error);
+            });
+        }
+      })();
+    });
+  </script>
+  <script src="achievement-drawer.js"></script>
+</body>
+</html>

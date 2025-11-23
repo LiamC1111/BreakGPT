@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leaderboard • Group Project: HELP</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // Block access if not logged in
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('login.html');
+    })();
+  </script>
+  <!-- Shared navbar -->
+  <script defer src="nav.js"></script>
+</head>
+<body>
+  <!-- Navbar injected by nav.js -->
+  <nav id="site-nav"></nav>
+
+  <main class="lb-container">
+    <h1 class="lb-title">Leaderboard</span></h1>
+
+    <!-- Highlighted #1 card -->
+    <section class="lb-top-card" id="topCard" aria-label="Top player">
+      <div class="lb-rank">👑</div>
+      <div class="lb-name-pill" id="topName">User 1</div>
+      <div class="lb-points-box" id="topPoints">0000</div>
+    </section>
+
+    <!-- Table for the rest -->
+    <section class="lb-table" aria-label="Leaderboard table">
+      <div class="lb-header">
+        <div class="lb-rank-col"></div>
+        <div class="lb-name-col">Player</div>
+        <div class="lb-points-col">Points</div>
+      </div>
+      <div id="lbRows" class="lb-rows"></div>
+    </section>
+  </main>
+
+  <script>
+    // INTEGRATION CHANGE: Replaced hardcoded leaderboard data with a fetch to the backend API endpoint "/api/leaderboard" to sync with server-side data. Adjusted property names from 'name' to 'username' to match backend response. Used backend-provided 'rank' for dynamic ranking. Added error handling for fetch failures. Added safeguards to default 'points' to 0 if undefined, preventing TypeError when calling toLocaleString().
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('/api/leaderboard');
+        if (!response.ok) {
+          throw new Error('Failed to fetch leaderboard');
+        }
+        const players = await response.json();
+
+        if (players.length === 0) {
+          // hanndle case with no players
+          document.getElementById('topName').textContent = 'No players yet';
+          document.getElementById('topPoints').textContent = '0';
+          return;
+        }
+
+        // render top card
+        const top = players[0];
+        document.getElementById('topCard').querySelector('.lb-rank').textContent = `👑`;
+        document.getElementById('topName').textContent = top.username;
+        document.getElementById('topPoints').textContent = (top.points || 0).toLocaleString();
+
+        // render rows 2 - 10 (or up to available)
+        const rowsEl = document.getElementById('lbRows');
+        players.slice(1).forEach((p) => {
+          const row = document.createElement('div');
+          row.className = 'lb-row';
+          row.innerHTML = `
+            <div class="lb-rank">${p.rank})</div>
+            <div class="lb-name-cell">${p.username}</div>
+            <div class="lb-points-cell">${(p.points || 0).toLocaleString()}</div>
+          `;
+          rowsEl.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        // optionally display an error message to the user
+        document.getElementById('topName').textContent = 'Error loading leaderboard';
+        document.getElementById('topPoints').textContent = '';
+      }
+    });
+  </script>
+</body>
+</html>

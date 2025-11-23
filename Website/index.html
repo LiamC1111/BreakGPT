@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Group Project: HELP</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // Gate: force login first
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('login.html');
+    })();
+  </script>
+  <script defer src="nav.js"></script>
+
+  <!-- progress.js needs to load early so we can ask about completion -->
+  <script defer src="Challenges/progress.js"></script>
+
+  <!-- our new routing logic for the "Lets Go!" button -->
+  <script defer src="next-challenge.js"></script>
+</head>
+<body>
+  <nav id="site-nav"></nav>
+
+  <div class="home-text-wrapper">
+    <h1 class="home-title">Welcome To <span class="highlight-phrase">Break</span>GPT!</h1>
+    <p class="home-description">
+      Think you can outsmart an AI? Welcome to the ultimate test of wits and dialogue.
+      Engage with our custom chatbots, dig for hidden clues, and prompt your way to a secret code
+      to conquer the challenges.<br>
+      Who will come out on top - man or machine?
+    </p>
+  </div>
+
+  <div class="home-button-container">
+    <button id="next-challenge-btn" class="next-challenge-button">
+      Lets Go!
+    </button>
+  </div>
+</body>
+</html>

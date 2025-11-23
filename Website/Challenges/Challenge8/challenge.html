@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Challenge 2 • Group Project: HELP</title>
+ <link rel="stylesheet" href="../../style.css">
+  <script>
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('../../login.html');
+    })();
+  </script>
+  <script defer src="../../nav.js"></script>
+</head>
+<body>
+  <nav id="site-nav"></nav>
+<div id="points-banner" class="points-banner">
+  <div class="points-box">
+    Points⭐ <span id="points-value">0</span> ⭐
+  </div>
+</div>
+  <h1>Challenge 8: Echo</h1>
+<div class="hint-container">
+  <button id="hintButton" class="hint-button">💡 Show Hint</button>
+  <p id="hintText" class="hint-text hidden">[Your hint will go here]</p>
+</div>
+  <div id="chat-container">
+    <div id="chat-box"></div>
+
+    <div id="chat-input">
+      <input id="user-prompt" type="text" placeholder="Type your message..." />
+      <button id="ask-btn">Send</button>
+    </div>
+  </div>
+
+  <div id="code-verify">
+    <input id="code-guess" type="text" placeholder="Enter secret code..." />
+    <button id="submit-code-btn">Submit Code</button>
+    <div id="code-result" aria-live="polite"></div>
+  </div>
+
+  <!-- INTEGRATION CHANGE: added script to define window.completeChallenge for server-side challenge completion -->
+  <script>
+    // global function for completing challenges server-side
+    window.completeChallenge = async function() {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) throw new Error('User not logged in');
+      const challengeNumber = parseInt(location.pathname.match(/Challenge(\d+)/i)?.[1] || 1, 10);
+      const response = await fetch(`/api/user/${user.id}/complete-challenge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeId: challengeNumber, pointsEarned: 100 })
+      });
+      if (!response.ok) throw new Error('Failed to complete challenge');
+      return await response.json();
+    };
+  </script>
+
+  <!-- Shared progress + points system -->
+  <script defer src="../progress.js"></script>
+
+  <!-- This challenge’s main logic -->
+  <script type="module" defer src="Challenge.js"></script>
+  <!-- Challenge-to-challenge nav -->
+  <div class="challenge-nav">
+    <a id="prev-challenge" class="challenge-nav-btn prev">&larr; Previous challenge</a>
+    <a id="next-challenge" class="challenge-nav-btn next">Next challenge &rarr;</a>
+  </div>
+
+  <script>
+    // figure out which challenge we're on from the URL
+    (function () {
+      const match = location.pathname.match(/Challenge(\d+)/i);
+      const currentNum = match ? parseInt(match[1], 10) : 1;
+
+      const prevBtn = document.getElementById('prev-challenge');
+      const nextBtn = document.getElementById('next-challenge');
+
+      // Build links like ../Challenge3/challenge.html
+      // We're currently in /Challenges/ChallengeX/challenge.html
+      // so "../ChallengeY/challenge.html" will always work.
+      
+      // Previous
+      if (currentNum > 1) {
+        const prevNum = currentNum - 1;
+        prevBtn.href = `../Challenge${prevNum}/challenge.html`;
+      } else {
+        // if we're on Challenge 1, hide "Previous"
+        prevBtn.style.display = 'none';
+      }
+
+      // Next
+      const nextNum = currentNum + 1;
+      nextBtn.href = `../Challenge${nextNum}/challenge.html`;
+      // ^ this will always point at the next folder numerically.
+      // If you don't have that challenge yet, the link will 404 until you add it.
+    })();
+  </script>
+  <!-- ===== Forum Section (per-challenge discussion) ===== -->
+  <section id="forum-section" class="forum-section">
+    <h2 class="forum-title">Discussion Forum</h2>
+
+    <div id="forum-card" class="forum-card">
+      <div id="forum-posts" class="forum-posts">
+        <!-- Forum posts will be injected here -->
+      </div>
+
+      <div id="forum-new-post" class="forum-new-post">
+        <textarea
+          id="forum-post-body"
+          class="forum-textarea"
+          rows="3"
+          placeholder="Write a message..."
+        ></textarea>
+
+        <button id="forum-post-send" class="forum-send-btn">Send</button>
+
+        <div id="forum-error" class="forum-error"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- progress.js keeps the streak/progress UI in sync -->
+  <script defer src="../progress.js"></script>
+
+  <!-- challenge logic (Milo logic + forum logic for this challenge) -->
+  <script type="module" defer src="Challenge.js"></script>
+</body>
+</html>

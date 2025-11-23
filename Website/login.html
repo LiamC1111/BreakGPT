@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login • Group Project: HELP</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // Apply saved theme (no toggle here)
+    (function () {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        document.body && document.body.classList.add('dark-mode');
+      }
+      // If already logged in, go to app
+      if (localStorage.getItem('user')) {
+        window.location.replace('index.html');
+      }
+    })();
+  </script>
+</head>
+<body class="auth-body">
+  <div class="auth-wrapper">
+
+    <!-- Welcome Text -->
+    <div class="welcome-text-wrapper">
+      <h3 class="small-welcome-text">Welcome to...</h3>
+      <h1 class="large-welcome-text">BreakGPT</h1>
+      <h3 class="small-welcome-text">Please login or register to continue!</h3>
+    </div>
+
+    <!-- Login -->
+    <div class="auth-card">
+      <h2 class="auth-title">Login</h2>
+
+      <div id="login-feedback" class="feedback"></div>
+
+      <input class="pill-input" id="login-email" type="email" placeholder="Email" autocomplete="username" />
+      <input class="pill-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" />
+
+      <div class="forgot-link">
+        <a id="open-forgot">Forgot password?</a>
+      </div>
+
+      <button id="login-submit" class="auth-btn">Login</button>
+    </div>
+
+    <!-- Register -->
+    <div class="auth-card">
+      <h2 class="auth-title">Register</h2>
+
+      <div id="register-feedback" class="feedback"></div>
+
+      <input class="pill-input" id="register-username" type="text" placeholder="Username" autocomplete="name" />
+      <input class="pill-input" id="register-email" type="email" placeholder="Email" autocomplete="email" />
+      <input class="pill-input" id="register-password" type="password" placeholder="Password" autocomplete="new-password" />
+      <input class="pill-input" id="register-password-confirm" type="password" placeholder="Confirm Password" autocomplete="new-password" />
+
+      <button id="register-submit" class="auth-btn">Register</button>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal (placeholder) -->
+  <div id="forgot-modal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+      <span class="close" id="close-forgot">&times;</span>
+      <h3 id="forgot-title" style="margin:0 0 8px 0;">Reset your password</h3>
+      <p style="margin:0 0 10px 0; font-size:14px;">Enter your account email. We’ll send reset instructions if it exists.</p>
+      <input id="forgot-email" type="email" class="pill-input" placeholder="Email" />
+      <button id="forgot-submit" class="primary-btn">Send reset link</button>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND = "http://localhost:5000"; // adjust if needed
+
+    // --- elements ---
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const loginSubmit = document.getElementById('login-submit');
+    const loginFeedback = document.getElementById('login-feedback');
+
+    const registerUsername = document.getElementById('register-username');
+    const registerEmail = document.getElementById('register-email');
+    const registerPassword = document.getElementById('register-password');
+    const registerPasswordConfirm = document.getElementById('register-password-confirm');
+    const registerSubmit = document.getElementById('register-submit');
+    const registerFeedback = document.getElementById('register-feedback');
+
+    // forgot password
+    const openForgot = document.getElementById('open-forgot');
+    const forgotModal = document.getElementById('forgot-modal');
+    const closeForgot = document.getElementById('close-forgot');
+    const forgotEmail = document.getElementById('forgot-email');
+    const forgotSubmit = document.getElementById('forgot-submit');
+
+    function showMsg(el, msg, ok=false) {
+      el.style.display = 'block';
+      el.style.color = ok ? 'green' : 'crimson';
+      el.textContent = msg;
+    }
+
+    // simple email validator:
+    // - one "@" (not first/last char)
+    // - at least one "."
+    // - "." must come after "@"
+    // - something after final "."
+    function isValidEmail(email) {
+      // quick reject for empty / whitespace
+      if (!email) return false;
+
+      // basic pattern without getting too hardcore
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailPattern.test(email);
+    }
+
+    // ===== LOGIN =====
+    async function handleLogin(e) {
+      e.preventDefault();
+      loginFeedback.style.display = 'none';
+
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+
+      if (!email || !password) return showMsg(loginFeedback, 'Please enter email and password.');
+
+      loginSubmit.disabled = true; 
+      loginSubmit.textContent = 'Logging in...';
+      try {
+        const res = await fetch(`${BACKEND}/login`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMsg(loginFeedback, data.message || 'Login failed');
+          return;
+        }
+
+        localStorage.setItem('user', JSON.stringify(data.user || { username: data.username, email }));
+        window.location.replace('index.html');
+      } catch (err) {
+        showMsg(loginFeedback, 'Network error — could not reach server.');
+      } finally {
+        loginSubmit.disabled = false; 
+        loginSubmit.textContent = 'LOGIN';
+      }
+    }
+
+    loginSubmit.addEventListener('click', handleLogin);
+    [loginEmail, loginPassword].forEach(i => 
+      i.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(e); })
+    );
+
+    // ===== REGISTER =====
+    async function handleRegister(e) {
+      e.preventDefault();
+      registerFeedback.style.display = 'none';
+
+      const username = registerUsername.value.trim();
+      const email = registerEmail.value.trim();
+      const password = registerPassword.value;
+      const confirm = registerPasswordConfirm.value;
+
+      // Required fields
+      if (!username || !email || !password || !confirm) {
+        return showMsg(registerFeedback, 'All fields are required.');
+      }
+
+      // Email check
+      if (!isValidEmail(email)) {
+        return showMsg(registerFeedback, 'Please enter a valid email address.');
+      }
+
+      // Password checks
+      if (password.length < 6) {
+        return showMsg(registerFeedback, 'Password must be at least 6 characters.');
+      }
+      if (password !== confirm) {
+        return showMsg(registerFeedback, 'Passwords do not match.');
+      }
+
+      registerSubmit.disabled = true; 
+      registerSubmit.textContent = 'Creating...';
+      try {
+        const res = await fetch(`${BACKEND}/register`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMsg(registerFeedback, data.message || 'Registration failed');
+          return;
+        }
+
+        localStorage.setItem('user', JSON.stringify(data.user || { username, email }));
+        window.location.replace('index.html');
+      } catch (err) {
+        showMsg(registerFeedback, 'Network error — could not reach server.');
+      } finally {
+        registerSubmit.disabled = false; 
+        registerSubmit.textContent = 'Register';
+      }
+    }
+
+    registerSubmit.addEventListener('click', handleRegister);
+
+    // ===== Forgot Password (placeholder) =====
+    openForgot.addEventListener('click', () => {
+      forgotModal.style.display = 'block';
+      forgotModal.setAttribute('aria-hidden', 'false');
+      forgotEmail.focus();
+    });
+
+    closeForgot.addEventListener('click', () => {
+      forgotModal.style.display = 'none';
+      forgotModal.setAttribute('aria-hidden', 'true');
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === forgotModal) {
+        forgotModal.style.display = 'none';
+        forgotModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    forgotSubmit.addEventListener('click', (e) => {
+      e.preventDefault();
+      const email = (forgotEmail.value || '').trim();
+      if (!email) return alert('Please enter your email.');
+      // Placeholder: no backend yet
+      alert('If this email exists, password reset instructions will be sent.');
+      forgotModal.style.display = 'none';
+      forgotModal.setAttribute('aria-hidden', 'true');
+    });
+  </script>
+</body>
+</html>

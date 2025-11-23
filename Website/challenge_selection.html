@@ -1,0 +1,111 @@
+<!-- File: Website/challenge_selection.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Challenges • Group Project: HELP</title>
+
+  <!-- This page is INSIDE /Website, so link directly -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    // Require login (login page is also in /Website)
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('login.html');
+    })();
+  </script>
+
+  <!-- Load the shared navbar (also in /Website) -->
+  <script defer src="nav.js"></script>
+
+  <!-- Shared progress + points helpers -->
+  <script defer src="Challenges/progress.js"></script>
+</head>
+<body>
+  <nav id="site-nav"></nav>
+
+  <main class="lb-container">
+    <h1 class="lb-title">Challenges</h1>
+
+    <div class="profile-card challenges-card">
+      <h3 class="section-heading" style="margin-top:0;">Your Progress</h3>
+
+      <div class="challenge-list" id="challengeList" style="max-height:460px;"></div>
+    </div>
+  </main>
+
+  <script>
+  const challenges = [
+    { n: 1,  name: 'Challenge 1: Alex',  href: 'Challenges/Challenge1/challenge.html',  type: 'normal' },
+    { n: 2,  name: 'Challenge 2: Milo',  href: 'Challenges/Challenge2/challenge.html',  type: 'normal' },
+    { n: 3,  name: 'Challenge 3: Serena',  href: 'Challenges/Challenge3/challenge.html',  type: 'normal' },
+    { n: 4,  name: 'Challenge 4: Cipher',  href: 'Challenges/Challenge4/challenge.html',  type: 'normal' },
+    { n: 5,  name: 'Challenge 5: Dr. Node',  href: 'Challenges/Challenge5/challenge.html',  type: 'normal' },
+    { n: 6,  name: 'Challenge 6: Rhea',  href: 'Challenges/Challenge6/challenge.html',  type: 'normal' },
+    { n: 7,  name: 'Challenge 7: Sentinel',  href: 'Challenges/Challenge7/challenge.html',  type: 'normal' },
+    { n: 8,  name: 'Challenge 8: Echo',  href: 'Challenges/Challenge8/challenge.html',  type: 'normal' },
+    { n: 9,  name: 'Challenge 9: Vex',  href: 'Challenges/Challenge9/challenge.html',  type: 'normal' },
+    { n: 10, name: 'Challenge 10: Oracle-9', href: 'Challenges/Challenge10/challenge.html', type: 'normal' },
+    { n: 11, name: 'Challenge ENDLESS: ??', href: 'Challenges/Random/challenge.html', type: 'infinite' }
+  ];
+
+  const list = document.getElementById('challengeList');
+
+  function renderChallenges() {
+    list.innerHTML = '';
+
+    challenges.forEach(ch => {
+      const row = document.createElement('a');
+      row.className = 'challenge-row challenge-link';
+      row.href = ch.href;
+
+      let statusClass = 'cross';
+      let symbol = '✗';
+
+      if (ch.type === 'infinite') {
+        statusClass = 'infinite';
+        symbol = '∞';
+      } else if (window.Progress && Progress.hasCompleted(ch.n)) {
+        statusClass = 'tick';
+        symbol = '✓';
+      }
+
+      row.innerHTML = `
+        <span class="challenge-name">${ch.name}</span>
+        <span class="challenge-status ${statusClass}">${symbol}</span>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  // INTEGRATION CHANGE: Made safeRender async to wait for Progress.init() before rendering.
+  async function safeRender() {
+    if (window.Progress) {
+      // INTEGRATION CHANGE: Initialize Progress to fetch server data.
+      await Progress.init();
+      renderChallenges();
+    } else {
+      // retry until progress.js is loaded
+      setTimeout(safeRender, 50);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeRender);
+  } else {
+    safeRender();
+  }
+
+  // Live updates in the same tab
+  window.addEventListener('progress:updated', renderChallenges);
+
+  // Live updates if another tab modifies localStorage (for runs, etc.)
+  window.addEventListener('storage', (e) => {
+    const progressKey = (window.Progress && Progress.keys && Progress.keys.PROGRESS) || 'challengeProgress';
+    if (e.key === progressKey) renderChallenges();
+  });
+</script>
+
+</body>
+</html>

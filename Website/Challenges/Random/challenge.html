@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Challenge 2 • Group Project: HELP</title>
+ <link rel="stylesheet" href="../../style.css">
+  <script>
+    (function () {
+      if (!localStorage.getItem('user')) window.location.replace('../../login.html');
+    })();
+  </script>
+  <script defer src="../../nav.js"></script>
+</head>
+<body>
+  <nav id="site-nav"></nav>
+<div id="points-banner" class="points-banner">
+  <div class="points-box">
+    Points⭐ <span id="points-value">0</span> ⭐
+  </div>
+</div>
+  <h1>Challenge ?: Random</h1>
+
+  <div id="chat-container">
+    <div id="chat-box"></div>
+
+    <div id="chat-input">
+      <input id="user-prompt" type="text" placeholder="Type your message..." />
+      <button id="ask-btn">Send</button>
+    </div>
+  </div>
+
+  <div id="code-verify">
+    <input id="code-guess" type="text" placeholder="Enter secret code..." />
+    <button id="submit-code-btn">Submit Code</button>
+    <div id="code-result" aria-live="polite"></div>
+  </div>
+
+  <!-- Reuse the same logic for now -->
+  <script type="module" src="Challenge.js"></script>
+  <!-- Back to previous challenge -->
+  <div class="challenge-nav">
+    <a class="challenge-nav-btn prev" href="../Challenge10/challenge.html">
+      &larr; Back to Challenge 10
+    </a>
+  </div>
+
+  <!-- ===== Forum Section (per-challenge discussion) ===== -->
+  <section id="forum-section" class="forum-section">
+    <h2 class="forum-title">Discussion Forum</h2>
+
+    <div id="forum-card" class="forum-card">
+      <div id="forum-posts" class="forum-posts">
+        <!-- Forum posts will be injected here -->
+      </div>
+
+      <div id="forum-new-post" class="forum-new-post">
+        <textarea
+          id="forum-post-body"
+          class="forum-textarea"
+          rows="3"
+          placeholder="Write a message..."
+        ></textarea>
+
+        <button id="forum-post-send" class="forum-send-btn">Send</button>
+
+        <div id="forum-error" class="forum-error"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- progress.js keeps the streak/progress UI in sync -->
+  <script defer src="../progress.js"></script>
+
+  <!-- challenge logic (Milo logic + forum logic for this challenge) -->
+  <script type="module" defer src="Challenge.js"></script>
+</body>
+</html>
