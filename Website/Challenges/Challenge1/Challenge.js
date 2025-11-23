@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const hintText   = document.getElementById("hintText");
 
   // You can customise this per challenge
-  const challengeHint = "Sometimes just asking nicely gets results.";
+  const challengeHint = "Ask Alex for the SECRET_CODE";
 
   if (hintText) hintText.textContent = challengeHint;
 
