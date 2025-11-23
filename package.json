@@ -7,6 +7,9 @@
     "dev": "nodemon server.js",
     "build": "echo 'No build step needed'"
   },
+  "engines": {
+  "node": "20.x"
+},
   "dependencies": {
     "@google/genai": "^1.23.0",
     "@google/generative-ai": "^0.24.1",
