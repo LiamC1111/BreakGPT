@@ -1636,4 +1636,96 @@ body.dark-mode .points-box:hover {
   transform: scale(0.985);
 }
 
+/* =========================================
+   MOBILE RESPONSIVENESS FIXES
+   (Add to the very bottom of style.css)
+   ========================================= */
+
+@media (max-width: 768px) {
+
+  /* 1. Fix the Navbar Overlap */
+  nav {
+    flex-direction: column; /* Stack items vertically */
+    gap: 15px;
+    padding: 15px 10px; /* Reduce side padding */
+  }
+
+  .nav-center {
+    flex-wrap: wrap; /* Allow links to wrap to two lines if needed */
+    justify-content: center;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .nav-center button {
+    font-size: 16px; /* Slightly smaller text for mobile */
+    padding: 8px;
+  }
+
+  .nav-right {
+    width: 100%;
+    justify-content: center; /* Center the profile/toggle buttons */
+    padding-top: 5px;
+    border-top: 1px solid #333; /* Optional: separator line */
+  }
+
+  /* 2. Make Containers Wider on Mobile */
+  /* Currently set to 80%, which is too narrow on a phone */
+  #chat-container, 
+  .home-text-wrapper, 
+  .lb-container, 
+  .challenge-nav,
+  .forum-section,
+  .points-banner {
+    width: 95%; /* Use almost full width */
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* 3. Adjust Chat Height and Font */
+  #chat-container {
+    height: 75vh; /* Taller chat window on mobile */
+    margin-top: 20px;
+    padding: 10px;
+  }
+  
+  .chat-message {
+    max-width: 85%; /* Let messages take up more space */
+    font-size: 14px;
+  }
+
+  /* 4. Adjust Titles */
+  h1 {
+    margin-top: 25px;
+    font-size: 1.8rem; /* Prevent huge titles from breaking layout */
+  }
+  
+  .home-title {
+    font-size: 2.5rem; /* Ensure clamped size isn't too big */
+  }
+
+  /* 5. Fix Leaderboard Tables */
+  /* Allow the table to scroll horizontally if it gets too tight */
+  .lb-container {
+    overflow-x: auto; 
+  }
+  
+  .lb-header, .lb-row {
+    /* Reduce grid gaps or font sizes for the table */
+    grid-template-columns: 40px 1fr 70px; 
+    font-size: 13px;
+  }
+
+  /* 6. Login/Auth Page Fixes */
+  .auth-wrapper {
+    padding: 20px 10px;
+  }
+  
+  .auth-card {
+    width: 100%; /* Full width card on mobile */
+    max-width: 340px;
+  }
+}
+
 
