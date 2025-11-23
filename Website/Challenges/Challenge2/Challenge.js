@@ -73,7 +73,6 @@ function getChallengeNumber() {
 
 // ===== Secret for this run =====
 const secretCode = generateSecretCode(6);
-console.log("Secret for this run:", secretCode);
 
 // Conversation memory that we send to backend AI
 let conversationHistory = [

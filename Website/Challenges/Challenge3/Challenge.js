@@ -70,7 +70,7 @@ function getChallengeNumber() {
 
 // ===== Secret for this run =====
 const secretCode = generateSecretCode(6);
-console.log(secretCode); // dev peek
+
 
 // Conversation memory (agent knows the secret)
 let conversationHistory = [
